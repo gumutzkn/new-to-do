@@ -9,6 +9,12 @@ class Book {
 
 /**                   UI Class: Handle UI Tasks          */
 class UI {
+  static displayBooks() {
+    const books = Store.getBooks();
+
+    books.forEach((book) => UI.addBookToList(book));
+  }
+
   static addBookToList(book) {
     const list = document.getElementById("book-list");
 
@@ -61,8 +67,41 @@ class UI {
 }
 
 /**                  Store Class: Handles Storage        */
+class Store {
+  static getBooks() {
+    let books;
+
+    if (localStorage.getItem("books") === null) {
+      books = [];
+    } else {
+      books = JSON.parse(localStorage.getItem("books"));
+    }
+    return books;
+  }
+
+  static addBook(book) {
+    const books = Store.getBooks();
+
+    books.push(book);
+
+    localStorage.setItem("books", JSON.stringify(books));
+  }
+
+  static removeBook(isbn) {
+    const books = Store.getBooks();
+
+    books.forEach((book, index) => {
+      if (book.isbn === isbn) {
+        books.splice(index, 1);
+      }
+    });
+
+    localStorage.setItem("books", JSON.stringify(books));
+  }
+}
 
 /**                  Event: Display Books                */
+document.addEventListener("DOMContentLoaded", UI.displayBooks);
 
 /**                  Event: Add a Book                   */
 document.getElementById("book-form").addEventListener("submit", (e) => {
@@ -74,18 +113,35 @@ document.getElementById("book-form").addEventListener("submit", (e) => {
   const author = document.getElementById("author").value;
   const isbn = document.getElementById("isbn").value;
 
-  // Create Book
-  const book = new Book(title, author, isbn);
+  // Check If inputs are filled
+  if (title === "" || author === "" || isbn === "") {
+    UI.showAlert("Please fill in all fields", "danger");
+  } else {
+    // Create Book
+    const book = new Book(title, author, isbn);
 
-  // Add Book to UI
-  UI.addBookToList(book);
+    // Add Book to UI
+    UI.addBookToList(book);
 
-  // Clear Fields
-  UI.clearFields();
+    // Add Book to Store
+    Store.addBook(book);
+
+    // Show Success Alert When it's added
+    UI.showAlert("Successfully added", "success");
+
+    // Clear Fields
+    UI.clearFields();
+  }
 });
 
 /**                   EVENT: REMOVE A BOOK                */
 document.getElementById("book-list").addEventListener("click", (e) => {
   // Remove Book From UI
   UI.deleteBook(e.target);
+
+  // Remove Book From Store
+  Store.removeBook(e.target.parentElement.previousElementSibling.textContent);
+
+  // Show Deleted Message
+  UI.showAlert("Book Deleted", "danger");
 });
